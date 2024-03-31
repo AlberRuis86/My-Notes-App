@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const Body = () => {
   const [notes, setNotes] = useState([]);
@@ -6,8 +6,14 @@ const Body = () => {
   const [editingNoteId, setEditingNoteId] = useState(null);
   const [showArchivedNotes, setShowArchivedNotes] = useState(false);
   const [newTag, setNewTag] = useState('');
-  const [noteTags, setNoteTags] = useState({});
   const [searchTag, setSearchTag] = useState('');
+  const [filteredNotes, setFilteredNotes] = useState([]);
+
+  useEffect(() => {
+    setFilteredNotes(
+      notes.filter((note) => note.tags.includes(searchTag) && !note.archived)
+    );
+  }, [notes, searchTag]);
 
   const handleNoteContentChange = (event) => {
     setNewNoteContent(event.target.value);
@@ -15,79 +21,78 @@ const Body = () => {
 
   const handleNoteEdit = (noteId) => {
     setEditingNoteId(noteId);
-    const noteToEdit = notes.find(note => note.id === noteId);
+    const noteToEdit = notes.find((note) => note.id === noteId);
     if (noteToEdit) {
       setNewNoteContent(noteToEdit.content);
       setNewTag(noteToEdit.tags.join(' '));
     }
-  };  
-
-  const handleNoteUpdate = (event, noteId) => {
-    event.preventDefault();
-    setNotes(notes.map(note => {
-      if (note.id === noteId) {
-        return { ...note, content: newNoteContent };
-      }
-      return note;
-    }));
-    setEditingNoteId(null);
-    setNewNoteContent('');
   };
 
   const handleNoteDelete = (noteId) => {
-    setNotes(notes.filter(note => note.id !== noteId));
+    setNotes(notes.filter((note) => note.id !== noteId));
   };
 
   const handleNoteArchive = (noteId) => {
-    setNotes(notes.map(note => {
-      if (note.id === noteId) {
-        return { ...note, archived: true };
-      }
-      return note;
-    }));
+    setNotes(
+      notes.map((note) => {
+        if (note.id === noteId) {
+          return { ...note, archived: true };
+        }
+        return note;
+      })
+    );
   };
 
   const handleNoteUnarchive = (noteId) => {
-    setNotes(notes.map(note => {
-      if (note.id === noteId) {
-        return { ...note, archived: false };
-      }
-      return note;
-    }));
+    setNotes(
+      notes.map((note) => {
+        if (note.id === noteId) {
+          return { ...note, archived: false };
+        }
+        return note;
+      })
+    );
   };
 
   const handleSubmit = (event) => {
     event.preventDefault();
     if (editingNoteId !== null) {
-      setNotes(notes.map(note => {
-        if (note.id === editingNoteId) {
-          return { ...note, content: newNoteContent, tags: newTag.split(' ') };
-        }
-        return note;
-      }));
+      setNotes(
+        notes.map((note) => {
+          if (note.id === editingNoteId) {
+            return {
+              ...note,
+              content: newNoteContent,
+              tags: newTag.split(' '),
+            };
+          }
+          return note;
+        })
+      );
       setEditingNoteId(null);
     } else {
       const newNote = {
         id: Date.now(),
         content: newNoteContent,
         archived: false,
-        tags: newTag.split(' ')
+        tags: newTag.split(' '),
       };
       setNotes([...notes, newNote]);
     }
     setNewNoteContent('');
     setNewTag('');
-    setNoteTags({});
-  };  
+  };
 
   const removeTagFromNote = (noteId, tag) => {
-    setNotes(notes.map(note => {
-      if (note.id === noteId) {
-        return { ...note, tags: note.tags.filter(t => t !== tag) };
-      }
-      return note;
-    }));
-  };    
+    setNotes(
+      notes.map((note) => {
+        if (note.id === noteId) {
+          return { ...note, tags: note.tags.filter((t) => t !== tag) };
+        }
+        return note;
+      })
+    );
+  };
 
   const handleKeyDown = (event) => {
     if (event.key === 'Enter') {
@@ -100,14 +105,22 @@ const Body = () => {
   };
 
   const handleFilterByTag = () => {
-    // Filtrar las notas que contienen el tag buscado
-    const filteredNotes = notes.filter(note => note.tags.includes(searchTag));
-    // Actualizar el estado de las notas para mostrar solo las notas filtradas
-    setNotes(filteredNotes);
+    setFilteredNotes(
+      notes.filter((note) => note.tags.includes(searchTag) && !note.archived)
+    );
   };
 
-  const activeNotes = notes.filter(note => !note.archived);
-  const archivedNotes = notes.filter(note => note.archived);
+  const handleClearFilter = () => {
+    setSearchTag('');
+    setFilteredNotes([]);
+  };
+
+  const handleToggleArchivedNotes = () => {
+    setShowArchivedNotes(!showArchivedNotes);
+  };
+
+  const activeNotes = notes.filter((note) => !note.archived);
+  const archivedNotes = notes.filter((note) => note.archived);
 
   return (
     <div className="container flex flex-grow text-center mx-auto mt-8 h-full">
@@ -118,21 +131,40 @@ const Body = () => {
             <div key={note.id} className="bg-white p-2 mb-2 rounded-md shadow-md">
               <p>{note.content}</p>
               <div className="flex flex-wrap mt-2">
-                {note.tags && note.tags.map((tag) => (
-                  <div key={tag} className="bg-gray-200 text-gray-700 px-2 py-1 rounded-full mr-2 mb-2">
-                    {tag}
-                    <button
-                      className="ml-2"
-                      onClick={() => removeTagFromNote(note.id, tag)}
+                {note.tags &&
+                  note.tags.map((tag) => (
+                    <div
+                      key={tag}
+                      className="bg-gray-200 text-gray-700 px-2 py-1 rounded-full mr-2 mb-2"
                     >
-                      Remove
-                    </button>
-                  </div>
-                ))}
+                      {tag}
+                      <button
+                        className="ml-2"
+                        onClick={() => removeTagFromNote(note.id, tag)}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
               </div>
-              <button onClick={() => handleNoteEdit(note.id)} className="bg-green-500 text-white mx-2 my-2 px-4 py-2 rounded-lg shadow-md hover:bg-blue-600">Edit</button>
-              <button onClick={() => handleNoteDelete(note.id)} className="bg-red-500 text-white mx-2 my-2 px-4 py-2 rounded-lg shadow-md hover:bg-red-600">Delete</button>
-              <button onClick={() => handleNoteArchive(note.id)} className="bg-yellow-500 text-white mx-2 my-2 px-4 py-2 rounded-lg shadow-md hover:bg-yellow-600">Archive</button>
+              <button
+                onClick={() => handleNoteEdit(note.id)}
+                className="bg-green-500 text-white mx-2 my-2 px-4 py-2 rounded-lg shadow-md hover:bg-blue-600"
+              >
+                Edit
+              </button>
+              <button
+                onClick={() => handleNoteDelete(note.id)}
+                className="bg-red-500 text-white mx-2 my-2 px-4 py-2 rounded-lg shadow-md hover:bg-red-600"
+              >
+                Delete
+              </button>
+              <button
+                onClick={() => handleNoteArchive(note.id)}
+                className="bg-yellow-500 text-white mx-2 my-2 px-4 py-2 rounded-lg shadow-md hover:bg-yellow-600"
+              >
+                Archive
+              </button>
             </div>
           ))}
         </div>
@@ -158,8 +190,13 @@ const Body = () => {
                 className="border border-gray-400 px-2 py-1 rounded-md mr-2"
               />
             </div>
+            <button
+              type="submit"
+              className="bg-blue-500 text-white mx-2 my-2 px-4 py-2 rounded-lg shadow-md hover:bg-blue-600"
+            >
+              {editingNoteId ? 'Update Note' : 'Create Note'}
+            </button>
             <div className="mt-2">
-              {/* Nuevo campo de búsqueda de tags */}
               <input
                 type="text"
                 value={searchTag}
@@ -170,42 +207,84 @@ const Body = () => {
               <button
                 type="button"
                 onClick={handleFilterByTag}
-                className="bg-blue-500 text-white px-4 py-1 rounded-md"
+                className="bg-blue-500 text-white px-4 py-1 rounded-md mr-2"
               >
-                Filter
+                Filter Tag
+              </button>
+              <button
+                type="button"
+                onClick={handleClearFilter}
+                className="bg-gray-500 text-white px-4 py-1 rounded-md"
+              >
+                Clear
               </button>
             </div>
-            <button
-              type="submit"
-              className="bg-blue-500 text-white mx-2 my-2 px-4 py-2 rounded-lg shadow-md hover:bg-blue-600"
-            >
-              {editingNoteId ? 'Update Note' : 'Create Note'}
-            </button>
+            <div className="mt-4">
+              {filteredNotes.map((note) => (
+                <div
+                  key={note.id}
+                  className="bg-white p-2 mb-2 rounded-md shadow-md"
+                >
+                  <p>{note.content}</p>
+                  <div className="flex flex-wrap mt-2">
+                    {note.tags &&
+                      note.tags.map((tag) => (
+                        <div
+                          key={tag}
+                          className="bg-gray-200 text-gray-700 px-2 py-1 rounded-full mr-2 mb-2"
+                        >
+                          {tag}
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              ))}
+            </div>
           </form>
         </div>
       </div>
       <div className="w-1/3 mx-2">
-        {archivedNotes.length > 0 && (
+        {showArchivedNotes && archivedNotes.length > 0 && (
           <div>
             <h2 className="text-2xl font-bold">Archived Notes</h2>
             <div className="mt-8">
               {archivedNotes.map((note) => (
-                <div key={note.id} className="bg-white p-2 mb-2 rounded-md shadow-md">
+                <div
+                  key={note.id}
+                  className="bg-white p-2 mb-2 rounded-md shadow-md"
+                >
                   <p>{note.content}</p>
-                  <button onClick={() => handleNoteUnarchive(note.id)} className="bg-green-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-green-600">Unarchive</button>
+                  <div className="flex flex-wrap mt-2">
+                    {note.tags &&
+                      note.tags.map((tag) => (
+                        <div
+                          key={tag}
+                          className="bg-gray-200 text-gray-700 px-2 py-1 rounded-full mr-2 mb-2"
+                        >
+                          {tag}
+                        </div>
+                      ))}
+                  </div>
+                  <button
+                    onClick={() => handleNoteUnarchive(note.id)}
+                    className="bg-blue-500 text-white mx-2 my-2 px-4 py-2 rounded-lg shadow-md hover:bg-blue-600"
+                  >
+                    Unarchive
+                  </button>
                 </div>
               ))}
             </div>
           </div>
         )}
+        <button
+          onClick={handleToggleArchivedNotes}
+          className="bg-gray-500 text-white mx-2 my-2 px-4 py-2 rounded-lg shadow-md hover:bg-gray-600"
+        >
+          {showArchivedNotes ? 'Hide Archived Notes' : 'Show Archived Notes'}
+        </button>
       </div>
     </div>
-  );  
+  );
 };
 
 export default Body;
-
-
-
-
-
