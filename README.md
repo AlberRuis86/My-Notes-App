@@ -25,6 +25,7 @@ This is the frontend part of My App Note, a simple web application for taking, t
 - Vite: 5.2.7
 - React: 18.2.0
 - TailwindCss: 3.4.3
+- Axios: 1.6.8
 
 # Notes Application Backend
 
