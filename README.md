@@ -32,9 +32,9 @@ This project is the backend of a notes application that allows you to create, ed
 
 ## Technologies Used
 
-- NestJS
-- TypeORM
-
+- NestJS (v10.0.0)
+- TypeORM (v0.3.20)
+- PostgreSQL (pg v8.11.4)
 
 ## Installation
 
