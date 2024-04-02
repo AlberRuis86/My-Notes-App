@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
 const Body = () => {
   const [notes, setNotes] = useState([]);
@@ -10,48 +11,66 @@ const Body = () => {
   const [filteredNotes, setFilteredNotes] = useState([]);
 
   useEffect(() => {
-    setFilteredNotes(
-      notes.filter((note) => note.tags.includes(searchTag) && !note.archived)
-    );
-  }, [notes, searchTag]);
+    fetchNotes();
+  }, []);
 
-  const handleNoteContentChange = (event) => {
-    setNewNoteContent(event.target.value);
-  };
-
-  const handleNoteEdit = (noteId) => {
-    setEditingNoteId(noteId);
-    const noteToEdit = notes.find((note) => note.id === noteId);
-    if (noteToEdit) {
-      setNewNoteContent(noteToEdit.content);
-      setNewTag(noteToEdit.tags.join(' '));
+  const fetchNotes = async () => {
+    try {
+      const response = await axios.get('http://localhost:3000/notes');
+      setNotes(response.data);
+    } catch (error) {
+      console.error('Error fetching notes:', error);
     }
   };
 
-  const handleNoteDelete = (noteId) => {
-    setNotes(notes.filter((note) => note.id !== noteId));
+  const handleNoteDelete = async (noteId) => {
+    try {
+      await axios.delete(`http://localhost:3000/notes/${noteId}`);
+      fetchNotes();
+    } catch (error) {
+      console.error('Error deleting note:', error);
+    }
   };
 
-  const handleNoteArchive = (noteId) => {
-    setNotes(
-      notes.map((note) => {
-        if (note.id === noteId) {
-          return { ...note, archived: true };
-        }
-        return note;
-      })
-    );
+  const handleNoteArchive = async (noteId) => {
+    try {
+      await axios.put(`http://localhost:3000/notes/${noteId}`, { archived: true });
+      fetchNotes();
+    } catch (error) {
+      console.error('Error archiving note:', error);
+    }
   };
 
-  const handleNoteUnarchive = (noteId) => {
-    setNotes(
-      notes.map((note) => {
-        if (note.id === noteId) {
-          return { ...note, archived: false };
-        }
-        return note;
-      })
-    );
+  const handleNoteUnarchive = async (noteId) => {
+    try {
+      await axios.put(`http://localhost:3000/notes/${noteId}`, { archived: false });
+      fetchNotes();
+    } catch (error) {
+      console.error('Error unarchiving note:', error);
+    }
+  };
+
+  const handleCustomSubmit = async (event) => {
+    event.preventDefault();
+    try {
+      if (editingNoteId !== null) {
+        await axios.put(`http://localhost:3000/notes/${editingNoteId}`, {
+          content: newNoteContent,
+          tags: newTag.split(' '),
+        });
+        setEditingNoteId(null);
+      } else {
+        await axios.post('http://localhost:3000/notes', {
+          content: newNoteContent,
+          tags: newTag.split(' '),
+        });
+      }
+      setNewNoteContent('');
+      setNewTag('');
+      fetchNotes();
+    } catch (error) {
+      console.error('Error creating/updating note:', error);
+    }
   };
 
   const handleSubmit = (event) => {
@@ -121,6 +140,7 @@ const Body = () => {
 
   const activeNotes = notes.filter((note) => !note.archived);
   const archivedNotes = notes.filter((note) => note.archived);
+
 
   return (
     <div className="container flex flex-grow text-center mx-auto mt-8 h-full">

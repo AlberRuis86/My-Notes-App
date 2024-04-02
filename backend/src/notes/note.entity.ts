@@ -11,4 +11,7 @@ export class Note {
   @Column()
   content: string;
 
+  @Column("simple-array")
+  tags: string[];
+
 }

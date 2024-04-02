@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Note } from './note.entity';
 import { CreateNoteDto } from './dto/create-note.dto';
 import { UpdateNoteDto } from './dto/update-note.dto';
+import { AddTagDto } from './dto/add-tag.dto';
 
 @Injectable()
 export class NotesService {
@@ -28,7 +29,6 @@ export class NotesService {
   async update(id: string, updateNoteDto: UpdateNoteDto): Promise<Note> {
     const noteToUpdate = await this.noteRepository.findOne({ where: { id: Number(id) } });
     if (!noteToUpdate) {
-
       return null;
     }
     const updatedNote = Object.assign(noteToUpdate, updateNoteDto);
@@ -38,4 +38,31 @@ export class NotesService {
   async remove(id: string): Promise<void> {
     await this.noteRepository.delete(id);
   }
+
+  async addTagToNote(id: string, addTagDto: AddTagDto): Promise<Note> {
+    const note = await this.noteRepository.findOne({ where: { id: Number(id) } });
+    if (!note) {
+      return null;
+    }
+    if (!note.tags.includes(addTagDto.tag)) {
+      note.tags.push(addTagDto.tag);
+      await this.noteRepository.save(note);
+    }
+    return note;
+  }
+
+  async removeTagFromNote(id: string, tag: string): Promise<Note> {
+    const note = await this.noteRepository.findOne({ where: { id: Number(id) } });
+    if (!note) {
+      return null;
+    }
+    note.tags = note.tags.filter(t => t !== tag);
+    return this.noteRepository.save(note);
+  }  
+
+  async filterNotesByTags(tags: string[]): Promise<Note[]> {
+    const notes = await this.noteRepository.find();
+    return notes.filter(note => tags.every(tag => note.tags.includes(tag)));
+  }  
 }
+
