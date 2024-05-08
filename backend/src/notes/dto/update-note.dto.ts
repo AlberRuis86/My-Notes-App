@@ -1,5 +1,5 @@
 export class UpdateNoteDto {
-    readonly title?: string;
-    readonly content?: string;
-
-  }
+  readonly title?: string;
+  readonly content?: string;
+  readonly tags?: string[];
+}

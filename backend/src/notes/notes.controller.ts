@@ -7,7 +7,7 @@ import { AddTagDto } from './dto/add-tag.dto';
 import { FilterByTagsDto } from './dto/filter-by-tags.dto';
 
 @ApiTags('notes')
-@Controller('notes')
+@Controller('api/notes')
 export class NotesController {
   constructor(private readonly notesService: NotesService) {}
 

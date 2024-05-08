@@ -44,19 +44,19 @@ export class NotesService {
     if (!note) {
       return null;
     }
-    if (!note.tags.includes(addTagDto.tag)) {
-      note.tags.push(addTagDto.tag);
+    if (!note.tags.concat(addTagDto.tags)) {
+      note.tags.concat(addTagDto.tags);
       await this.noteRepository.save(note);
     }
     return note;
   }
 
-  async removeTagFromNote(id: string, tag: string): Promise<Note> {
+  async removeTagFromNote(id: string, tags: string): Promise<Note> {
     const note = await this.noteRepository.findOne({ where: { id: Number(id) } });
     if (!note) {
       return null;
     }
-    note.tags = note.tags.filter(t => t !== tag);
+    note.tags = note.tags.filter(t => t !== tags);
     return this.noteRepository.save(note);
   }  
 

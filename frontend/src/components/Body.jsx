@@ -9,6 +9,7 @@ const Body = () => {
   const [newTag, setNewTag] = useState('');
   const [searchTag, setSearchTag] = useState('');
   const [filteredNotes, setFilteredNotes] = useState([]);
+  const [newNoteTitle, setNewNoteTitle] = useState('');
 
   useEffect(() => {
     fetchNotes();
@@ -55,12 +56,14 @@ const Body = () => {
     try {
       if (editingNoteId !== null) {
         await axios.put(`http://localhost:3000/notes/${editingNoteId}`, {
+          title: newNoteTitle,
           content: newNoteContent,
           tags: newTag.split(' '),
         });
         setEditingNoteId(null);
       } else {
         await axios.post('http://localhost:3000/notes', {
+          title: newNoteTitle,
           content: newNoteContent,
           tags: newTag.split(' '),
         });
@@ -81,6 +84,7 @@ const Body = () => {
           if (note.id === editingNoteId) {
             return {
               ...note,
+              title: newNoteTitle,
               content: newNoteContent,
               tags: newTag.split(' '),
             };
@@ -92,6 +96,7 @@ const Body = () => {
     } else {
       const newNote = {
         id: Date.now(),
+        title: newNoteTitle,
         content: newNoteContent,
         archived: false,
         tags: newTag.split(' '),
@@ -100,6 +105,7 @@ const Body = () => {
     }
     setNewNoteContent('');
     setNewTag('');
+    setNewNoteTitle('');
   };
 
   const removeTagFromNote = (noteId, tag) => {
@@ -137,6 +143,11 @@ const Body = () => {
   const handleToggleArchivedNotes = () => {
     setShowArchivedNotes(!showArchivedNotes);
   };
+
+  const handleNoteContentChange = (event) => {
+    setNewNoteContent(event.target.value);
+  };
+  
 
   const activeNotes = notes.filter((note) => !note.archived);
   const archivedNotes = notes.filter((note) => note.archived);
@@ -192,8 +203,18 @@ const Body = () => {
       <div className="w-1/3 mx-2">
         <h2 className="text-2xl font-bold">Notes</h2>
         <div className="h-full bg-gray-200 p-4 rounded-lg shadow-md" id="form">
-          <form onSubmit={handleSubmit}>
+          <form id="noteForm" onSubmit={handleSubmit}>
+          <input
+          id="newNoteTitleInput"
+  type="text"
+  value={newNoteTitle}
+  onChange={(e) => setNewNoteTitle(e.target.value)}
+  placeholder="Enter your note title..."
+  className="border border-gray-400 px-2 py-1 rounded-md mr-2"
+  required
+/>
             <textarea
+              id="newNoteContentTextarea"
               className="w-full h-20 p-2 mb-2 rounded-md border-gray-300 focus:outline-none focus:ring focus:border-blue-300"
               placeholder="Enter your note content..."
               value={newNoteContent}
@@ -203,11 +224,13 @@ const Body = () => {
             ></textarea>
             <div className="mt-2">
               <input
+                id="newTagInput"
                 type="text"
                 value={newTag}
                 onChange={(e) => setNewTag(e.target.value)}
                 placeholder="Add tag (comma separated)..."
                 className="border border-gray-400 px-2 py-1 rounded-md mr-2"
+                required
               />
             </div>
             <button
@@ -218,6 +241,7 @@ const Body = () => {
             </button>
             <div className="mt-2">
               <input
+                id="searchTag"
                 type="text"
                 value={searchTag}
                 onChange={handleSearchTagChange}
