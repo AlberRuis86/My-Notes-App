@@ -1,5 +1,16 @@
+import { IsString, IsArray, IsOptional, IsBoolean } from 'class-validator';
+
 export class CreateNoteDto {
-    readonly title: string;
-    readonly content: string;
-    readonly tags: string[];
-} 
+  @IsString()
+  readonly title: string;
+
+  @IsString()
+  readonly content: string;
+
+  @IsArray()
+  readonly tags: string[];
+
+  @IsOptional()
+  @IsBoolean()
+  readonly archived?: boolean;
+}

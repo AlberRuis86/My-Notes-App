@@ -14,4 +14,6 @@ export class Note {
   @Column("simple-array")
   tags: string[];
 
+  @Column({ default: false })
+  archived: boolean;
 }

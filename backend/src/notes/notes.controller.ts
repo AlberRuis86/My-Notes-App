@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Query, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Patch, Delete, Body, Param, Query, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiResponse, ApiBadRequestResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { NotesService } from './notes.service';
 import { CreateNoteDto } from './dto/create-note.dto';
@@ -37,7 +37,7 @@ export class NotesController {
     return this.notesService.filterNotesByTags(filterByTagsDto.tags);
   }
 
-  @Post()
+  @Post('')
   @ApiResponse({ status: 201, description: 'Nota creada satisfactoriamente.' })
   @ApiBadRequestResponse({ description: 'Petición inválida.' })
   create(@Body() createNoteDto: CreateNoteDto) {
@@ -53,14 +53,39 @@ export class NotesController {
     return this.notesService.addTagToNote(id, addTagDto);
   }
 
+  @Put(':id')
+  @ApiParam({ name: 'id', description: 'ID de la nota' })
+  @ApiResponse({ status: 200, description: 'Nota archivada satisfactoriamente.' })
+  @ApiResponse({ status: 404, description: 'Nota no encontrada.' })
+  @ApiBadRequestResponse({ description: 'Petición inválida.' })
+  async archive(@Param('id') id: string) {
+    const updateNoteDto = new UpdateNoteDto();
+    // Actualiza el objeto updateNoteDto directamente
+    updateNoteDto.archived = true;
+    return this.notesService.update(id, updateNoteDto);
+  }  
+
   @Patch(':id')
   @ApiParam({ name: 'id', description: 'ID de la nota' })
   @ApiResponse({ status: 200, description: 'Nota actualizada satisfactoriamente.' })
   @ApiResponse({ status: 404, description: 'Nota no encontrada.' })
   @ApiBadRequestResponse({ description: 'Petición inválida.' })
-  update(@Param('id') id: string, @Body() updateNoteDto: UpdateNoteDto) {
+  async update(@Param('id') id: string, @Body() updateNoteDto: UpdateNoteDto) {
+    if (updateNoteDto.archived !== undefined) {
+      updateNoteDto.archived = !updateNoteDto.archived; // Invierte el valor para desarchivar
+    }
     return this.notesService.update(id, updateNoteDto);
   }
+
+  @Patch('update/:id')
+  @ApiParam({ name: 'id', description: 'ID de la nota' })
+  @ApiResponse({ status: 200, description: 'Nota actualizada satisfactoriamente.' })
+  @ApiResponse({ status: 404, description: 'Nota no encontrada.' })
+  @ApiBadRequestResponse({ description: 'Petición inválida.' })
+  async updateNote(@Param('id') id: string, @Body() updateNoteDto: UpdateNoteDto) {
+    return this.notesService.updateNote(id, updateNoteDto);
+  }
+
 
   @Delete(':id')
   @ApiParam({ name: 'id', description: 'ID de la nota' })

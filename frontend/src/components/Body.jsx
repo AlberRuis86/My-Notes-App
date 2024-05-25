@@ -17,95 +17,86 @@ const Body = () => {
 
   const fetchNotes = async () => {
     try {
-      const response = await axios.get('http://localhost:3000/notes');
+      const response = await axios.get('http://localhost:3000/api/notes');
       setNotes(response.data);
     } catch (error) {
       console.error('Error fetching notes:', error);
+      setError('Failed to fetch notes');
     }
   };
 
   const handleNoteDelete = async (noteId) => {
     try {
-      await axios.delete(`http://localhost:3000/notes/${noteId}`);
+      await axios.delete(`http://localhost:3000/api/notes/${noteId}`);
       fetchNotes();
     } catch (error) {
       console.error('Error deleting note:', error);
+      setError('Failed to delete note');
     }
   };
 
-  const handleNoteArchive = async (noteId) => {
-    try {
-      await axios.put(`http://localhost:3000/notes/${noteId}`, { archived: true });
-      fetchNotes();
-    } catch (error) {
-      console.error('Error archiving note:', error);
-    }
-  };
+const handleNoteArchive = async (noteId) => {
+  try {
+    await axios.put(`http://localhost:3000/api/notes/${noteId}`, { archived: true });
+    fetchNotes();
+  } catch (error) {
+    console.error('Error archiving note:', error);
+    setError('Failed to archive note');
+  }
+};
 
   const handleNoteUnarchive = async (noteId) => {
     try {
-      await axios.put(`http://localhost:3000/notes/${noteId}`, { archived: false });
+      await axios.patch(`http://localhost:3000/api/notes/${noteId}`, { archived: true });
+      console.log('Desarchivación exitosa. ID de la nota:', noteId);
       fetchNotes();
     } catch (error) {
-      console.error('Error unarchiving note:', error);
+      console.error('Error al desarchivar la nota:', error);
+      setError('Failed to unarchive note');
     }
-  };
+  };  
 
-  const handleCustomSubmit = async (event) => {
-    event.preventDefault();
+  const handleNoteCreate = async () => {
     try {
-      if (editingNoteId !== null) {
-        await axios.put(`http://localhost:3000/notes/${editingNoteId}`, {
-          title: newNoteTitle,
-          content: newNoteContent,
-          tags: newTag.split(' '),
-        });
-        setEditingNoteId(null);
-      } else {
-        await axios.post('http://localhost:3000/notes', {
-          title: newNoteTitle,
-          content: newNoteContent,
-          tags: newTag.split(' '),
-        });
-      }
-      setNewNoteContent('');
-      setNewTag('');
-      fetchNotes();
-    } catch (error) {
-      console.error('Error creating/updating note:', error);
-    }
-  };
-
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    if (editingNoteId !== null) {
-      setNotes(
-        notes.map((note) => {
-          if (note.id === editingNoteId) {
-            return {
-              ...note,
-              title: newNoteTitle,
-              content: newNoteContent,
-              tags: newTag.split(' '),
-            };
-          }
-          return note;
-        })
-      );
-      setEditingNoteId(null);
-    } else {
-      const newNote = {
-        id: Date.now(),
+      const newNoteData = {
         title: newNoteTitle,
         content: newNoteContent,
-        archived: false,
         tags: newTag.split(' '),
       };
-      setNotes([...notes, newNote]);
+  
+      await axios.post('http://localhost:3000/api/notes', newNoteData);
+      fetchNotes();
+    } catch (error) {
+      console.error('Error creating note:', error);
+      setError('Failed to create note');
     }
-    setNewNoteContent('');
-    setNewTag('');
-    setNewNoteTitle('');
+  };
+  
+  const handleNoteUpdate = async () => {
+    try {
+      setNewNoteTitle(newNoteTitle);
+      setNewNoteContent(newNoteContent);
+      setNewTag(newTag);
+  
+      await axios.put(`http://localhost:3000/api/notes/${editingNoteId}`, {
+        title: newNoteTitle,
+        content: newNoteContent,
+        tags: newTag.split(' '),
+      });
+      setEditingNoteId(null);
+      fetchNotes(); // Actualizar la lista de notas después de editar
+    } catch (error) {
+      console.error('Error updating note:', error);
+      setError('Failed to update note');
+    }
+  }; 
+
+  const handleEditButtonClick = (noteId) => {
+    const noteToEdit = notes.find((note) => note.id === noteId);
+    setNewNoteTitle(noteToEdit.title);
+    setNewNoteContent(noteToEdit.content);
+    setNewTag(noteToEdit.tags.join(' '));
+    setEditingNoteId(noteId);
   };
 
   const removeTagFromNote = (noteId, tag) => {
@@ -159,7 +150,10 @@ const Body = () => {
         <h2 className="text-2xl font-bold">Active Notes</h2>
         <div className="mt-4">
           {activeNotes.map((note) => (
-            <div key={note.id} className="bg-white p-2 mb-2 rounded-md shadow-md">
+            <div
+              key={note.id}
+              className="bg-white p-2 mb-2 rounded-md shadow-md"
+            >
               <p>{note.content}</p>
               <div className="flex flex-wrap mt-2">
                 {note.tags &&
@@ -179,7 +173,7 @@ const Body = () => {
                   ))}
               </div>
               <button
-                onClick={() => handleNoteEdit(note.id)}
+                onClick={() => handleEditButtonClick(note.id)}
                 className="bg-green-500 text-white mx-2 my-2 px-4 py-2 rounded-lg shadow-md hover:bg-blue-600"
               >
                 Edit
@@ -203,18 +197,16 @@ const Body = () => {
       <div className="w-1/3 mx-2">
         <h2 className="text-2xl font-bold">Notes</h2>
         <div className="h-full bg-gray-200 p-4 rounded-lg shadow-md" id="form">
-          <form id="noteForm" onSubmit={handleSubmit}>
-          <input
-          id="newNoteTitleInput"
-  type="text"
-  value={newNoteTitle}
-  onChange={(e) => setNewNoteTitle(e.target.value)}
-  placeholder="Enter your note title..."
-  className="border border-gray-400 px-2 py-1 rounded-md mr-2"
-  required
-/>
+          <form>
+            <input
+              type="text"
+              value={newNoteTitle}
+              onChange={(e) => setNewNoteTitle(e.target.value)}
+              placeholder="Enter your note title..."
+              className="border border-gray-400 px-2 py-1 rounded-md mr-2"
+              required
+            />
             <textarea
-              id="newNoteContentTextarea"
               className="w-full h-20 p-2 mb-2 rounded-md border-gray-300 focus:outline-none focus:ring focus:border-blue-300"
               placeholder="Enter your note content..."
               value={newNoteContent}
@@ -224,7 +216,6 @@ const Body = () => {
             ></textarea>
             <div className="mt-2">
               <input
-                id="newTagInput"
                 type="text"
                 value={newTag}
                 onChange={(e) => setNewTag(e.target.value)}
@@ -235,13 +226,15 @@ const Body = () => {
             </div>
             <button
               type="submit"
+              onClick={() =>
+                editingNoteId ? handleNoteUpdate() : handleNoteCreate()
+              }
               className="bg-blue-500 text-white mx-2 my-2 px-4 py-2 rounded-lg shadow-md hover:bg-blue-600"
             >
-              {editingNoteId ? 'Update Note' : 'Create Note'}
+              {editingNoteId ? "Update Note" : "Create Note"}
             </button>
             <div className="mt-2">
               <input
-                id="searchTag"
                 type="text"
                 value={searchTag}
                 onChange={handleSearchTagChange}
@@ -324,7 +317,7 @@ const Body = () => {
           onClick={handleToggleArchivedNotes}
           className="bg-gray-500 text-white mx-2 my-2 px-4 py-2 rounded-lg shadow-md hover:bg-gray-600"
         >
-          {showArchivedNotes ? 'Hide Archived Notes' : 'Show Archived Notes'}
+          {showArchivedNotes ? "Hide Archived Notes" : "Show Archived Notes"}
         </button>
       </div>
     </div>

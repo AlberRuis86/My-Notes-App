@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Note } from './note.entity';
@@ -18,8 +18,12 @@ export class NotesService {
   }
 
   async findOne(id: string): Promise<Note> {
-    return this.noteRepository.findOne({ where: { id: Number(id) } });
-  }  
+    const note = await this.noteRepository.findOne({ where: { id: Number(id) } });
+    if (!note) {
+      throw new NotFoundException('Note not found');
+    }
+    return note;
+  }
 
   async create(createNoteDto: CreateNoteDto): Promise<Note> {
     const newNote = this.noteRepository.create(createNoteDto);
@@ -27,42 +31,57 @@ export class NotesService {
   }
 
   async update(id: string, updateNoteDto: UpdateNoteDto): Promise<Note> {
-    const noteToUpdate = await this.noteRepository.findOne({ where: { id: Number(id) } });
-    if (!noteToUpdate) {
-      return null;
+    const noteToUpdate = await this.findOne(id);
+    
+    noteToUpdate.archived = updateNoteDto.archived;
+    
+    return this.noteRepository.save(noteToUpdate);
+  }
+
+  async updateNote(id: string, updateNoteDto: UpdateNoteDto): Promise<Note> {
+    const noteToUpdate = await this.findOne(id);
+    
+    if (updateNoteDto.title !== undefined) {
+      noteToUpdate.title = updateNoteDto.title;
     }
-    const updatedNote = Object.assign(noteToUpdate, updateNoteDto);
-    return this.noteRepository.save(updatedNote);
-  }  
+    if (updateNoteDto.content !== undefined) {
+      noteToUpdate.content = updateNoteDto.content;
+    }
+    if (updateNoteDto.tags !== undefined) {
+      noteToUpdate.tags = updateNoteDto.tags;
+    }
+
+    return this.noteRepository.save(noteToUpdate);
+  }
 
   async remove(id: string): Promise<void> {
-    await this.noteRepository.delete(id);
+    const note = await this.findOne(id);
+    await this.noteRepository.remove(note);
   }
 
   async addTagToNote(id: string, addTagDto: AddTagDto): Promise<Note> {
-    const note = await this.noteRepository.findOne({ where: { id: Number(id) } });
-    if (!note) {
-      return null;
-    }
-    if (!note.tags.concat(addTagDto.tags)) {
-      note.tags.concat(addTagDto.tags);
-      await this.noteRepository.save(note);
-    }
-    return note;
+    const note = await this.findOne(id);
+    
+    addTagDto.tags.forEach(tag => {
+      if (!note.tags.includes(tag)) {
+        note.tags.push(tag);
+      }
+    });
+
+    return this.noteRepository.save(note);
   }
 
-  async removeTagFromNote(id: string, tags: string): Promise<Note> {
-    const note = await this.noteRepository.findOne({ where: { id: Number(id) } });
-    if (!note) {
-      return null;
-    }
-    note.tags = note.tags.filter(t => t !== tags);
+  async removeTagFromNote(id: string, tag: string): Promise<Note> {
+    const note = await this.findOne(id);
+    
+    note.tags = note.tags.filter(t => t !== tag);
+    
     return this.noteRepository.save(note);
-  }  
+  }
 
   async filterNotesByTags(tags: string[]): Promise<Note[]> {
     const notes = await this.noteRepository.find();
     return notes.filter(note => tags.every(tag => note.tags.includes(tag)));
-  }  
+  }
 }
 
